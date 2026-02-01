@@ -29,3 +29,7 @@ func (ms *MemStorage) Set(param, key, value string) {
 		ms.counter[key] = append(ms.counter[key], counter(num))
 	}
 }
+
+func (ms *MemStorage) Get() []string {
+	return nil
+}
