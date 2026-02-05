@@ -1,10 +1,11 @@
 package storage
 
 import (
+	"fmt"
 	"strconv"
 )
 
-type gauge int64
+type gauge float64
 
 type counter int64
 
@@ -21,13 +22,15 @@ func New() *MemStorage {
 }
 
 func (ms *MemStorage) Set(param, key, value string) {
-	num, _ := strconv.ParseInt(value, 10, 64)
 	switch param {
 	case "gauge":
+		num, _ := strconv.ParseFloat(value, 64)
 		ms.gauge[key] = gauge(num)
 	case "counter":
+		num, _ := strconv.ParseInt(value, 10, 64)
 		ms.counter[key] = append(ms.counter[key], counter(num))
 	}
+	fmt.Println(ms)
 }
 
 func (ms *MemStorage) Get() []string {
