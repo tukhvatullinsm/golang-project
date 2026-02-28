@@ -3,7 +3,8 @@ package agent
 import (
 	"fmt"
 	"log"
-	"net/http"
+
+	"github.com/go-resty/resty/v2"
 )
 
 type AgentProvider interface {
@@ -31,23 +32,36 @@ func (aa *AgentApp) UpdateValue() {
 
 func (aa *AgentApp) SendMetric() {
 	exportData := *aa.getData.ExportMetrics()
-	req, err := http.NewRequest("POST", aa.remoteProtocol+aa.remoteHost+aa.remotePort, nil)
-	req.Header.Add("Content-Type", "text/plain")
-	if err != nil {
-		log.Fatal(err)
-	}
-	client := &http.Client{}
+	client := resty.New()
+	client.SetHeader("Content-Type", "text/plain")
+	client.SetBaseURL(aa.remoteProtocol + aa.remoteHost + ":" + aa.remotePort + "/update")
+	/*
+		req, err := http.NewRequest("POST", aa.remoteProtocol+aa.remoteHost+aa.remotePort, nil)
+		req.Header.Add("Content-Type", "text/plain")
+		if err != nil {
+			log.Fatal(err)
+		}
+	*/
+	//client := &http.Client{}
 	for k, v := range exportData {
 		path := ""
 		for m, a := range v {
-			path = "/update/" + k + "/" + m + "/" + fmt.Sprintf("%v", a)
-			req.URL.Path = path
+			path = "/" + k + "/" + m + "/" + fmt.Sprintf("%v", a)
+			resp, err := client.R().
+				Post(path)
+			if err != nil {
+				log.Fatal(err, resp.StatusCode())
+			}
+			if resp.StatusCode() != 200 {
+				log.Fatal(resp.RawResponse)
+			}
+			/*req.URL.Path = path
 			req.URL.EscapedPath()
 			resp, err := client.Do(req)
 			if err != nil {
 				log.Fatal(err, resp.StatusCode)
 			}
-			resp.Body.Close()
+			resp.Body.Close() */
 		}
 	}
 }
