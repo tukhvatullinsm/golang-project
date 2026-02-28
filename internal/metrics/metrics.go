@@ -58,19 +58,3 @@ func (mm *MyMetrics) ExportMetrics() *map[string]map[string]interface{} {
 
 	return &result
 }
-
-/*
-func getStructFieldAttr(v interface{}) map[string]string {
-	t := reflect.TypeOf(v).Elem()
-	numField := t.NumField()
-	structAttr := make(map[string]string, numField)
-	for i := 0; i < numField; i++ {
-		field := t.Field(i)
-		if field.Type.Kind() == reflect.Map {
-			maps.Copy(structAttr, getStructFieldAttr(field))
-		}
-		structAttr[field.Name] = field.Type.Name()
-	}
-	return structAttr
-}
-*/
