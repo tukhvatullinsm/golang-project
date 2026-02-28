@@ -1,7 +1,6 @@
 package storage
 
 import (
-	"fmt"
 	"strconv"
 )
 
@@ -30,7 +29,6 @@ func (ms *MemStorage) Set(param, key, value string) {
 		num, _ := strconv.ParseInt(value, 10, 64)
 		ms.counter[key] = append(ms.counter[key], counter(num))
 	}
-	fmt.Println(ms)
 }
 
 func (ms *MemStorage) Get() []string {

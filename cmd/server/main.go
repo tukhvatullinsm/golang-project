@@ -3,7 +3,7 @@ package main
 import (
 	"net/http"
 
-	"github.com/tukhvatullinsm/golang-project/internal/handlers"
+	"github.com/tukhvatullinsm/golang-project/internal/handlers/server"
 	"github.com/tukhvatullinsm/golang-project/internal/storage"
 )
 
@@ -17,7 +17,7 @@ func main() {
 	objStorage := storage.New()
 
 	//TODO: init App object
-	webapp := handlers.WebApp{objStorage}
+	webapp := server.WebApp{objStorage}
 
 	// TODO: init new handler
 	mux := http.NewServeMux()
