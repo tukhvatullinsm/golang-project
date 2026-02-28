@@ -20,9 +20,9 @@ func (wa *WebApp) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		ct := r.Header.Get("Content-Type")
 		switch ct {
 		case "text/plain":
-			res, http_code := CheckUrlParams(sliceQueryParams)
+			res, httpCode := CheckUrlParams(sliceQueryParams)
 			if !res {
-				w.WriteHeader(http_code)
+				w.WriteHeader(httpCode)
 				return
 			}
 			wa.ObjStorage.Set(sliceQueryParams[0], sliceQueryParams[1], sliceQueryParams[2])
