@@ -12,6 +12,10 @@ type WebApp struct {
 	ObjStorage *storage.MemStorage
 }
 
+func (wa *WebApp) Init(strg *storage.MemStorage) {
+	wa.ObjStorage = strg
+}
+
 func (wa *WebApp) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
 		rawQueryParams := r.URL.EscapedPath()
@@ -20,7 +24,7 @@ func (wa *WebApp) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		ct := r.Header.Get("Content-Type")
 		switch ct {
 		case "text/plain":
-			res, httpCode := CheckUrlParams(sliceQueryParams)
+			res, httpCode := CheckURLParams(sliceQueryParams)
 			if !res {
 				w.WriteHeader(httpCode)
 				return
@@ -44,7 +48,7 @@ var parameters = map[string]int64{
 	"gauge":   2,
 }
 
-func CheckUrlParams(params []string) (bool, int) {
+func CheckURLParams(params []string) (bool, int) {
 	if len(params) != 3 {
 		return false, http.StatusNotFound
 	}

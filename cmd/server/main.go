@@ -17,7 +17,8 @@ func main() {
 	objStorage := storage.New()
 
 	//TODO: init App object
-	webapp := server.WebApp{objStorage}
+	webapp := server.WebApp{}
+	webapp.Init(objStorage)
 
 	// TODO: init new handler
 	mux := http.NewServeMux()
