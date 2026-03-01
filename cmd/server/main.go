@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/tukhvatullinsm/golang-project/internal/handlers/server"
 	"github.com/tukhvatullinsm/golang-project/internal/storage"
 )
@@ -21,11 +22,13 @@ func main() {
 	webapp.Init(objStorage)
 
 	// TODO: init new handler
-	mux := http.NewServeMux()
-	mux.HandleFunc("/update/", webapp.ServeHTTP)
+	router := chi.NewRouter()
+	router.Get("/value/{type}/{name}", webapp.GetValue)
+	router.Get("/", webapp.GetParam)
+	router.Post("/update/{type}/{name}/{value}", webapp.SetValues)
 
 	// TODO: Run and Check Server
-	err := http.ListenAndServe(IP+":"+PORT, mux)
+	err := http.ListenAndServe(IP+":"+PORT, router)
 	if err != nil {
 		panic(err)
 	}
