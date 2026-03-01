@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"runtime"
 	"time"
 
@@ -8,12 +9,26 @@ import (
 	"github.com/tukhvatullinsm/golang-project/internal/metrics"
 )
 
+var WebServer struct {
+	Endpoint string
+}
+
+var WebClient struct {
+	PollInterval   time.Duration
+	ReportInterval time.Duration
+}
+
+func init() {
+	flag.StringVar(&WebServer.Endpoint, "a", "localhost:8080", "Enter endpoint socket (address:port)")
+	flag.DurationVar(&WebClient.ReportInterval, "r", 10, "Report interval for metrics in seconds")
+	flag.DurationVar(&WebClient.PollInterval, "p", 2, "Poll interval for metrics in seconds")
+
+}
+
 const (
-	pollInterval   = 2 * time.Second
-	reportInterval = 10 * time.Second
-	host           = "localhost"
-	scheme         = "http://"
-	port           = "8080"
+	//pollInterval   = 2 * time.Second
+	//reportInterval = 10 * time.Second
+	scheme = "http://"
 )
 
 var MetricsName = []string{
@@ -54,12 +69,12 @@ func main() {
 	metricsObj.Init(&runMemStat, MetricsName)
 	// TODO: init agent handler object
 	agentApp := agent.AgentApp{}
-	agentApp.Init(scheme, host, port, &metricsObj)
+	agentApp.Init(scheme, WebServer.Endpoint, &metricsObj)
 	// TODO: run main algorithm
 
 	for {
 		agentApp.UpdateValue()
-		time.Sleep(pollInterval)
+		time.Sleep(WebClient.PollInterval * time.Second)
 		if int64(metricsObj.PollCount)%5 == 0 {
 			agentApp.SendMetric()
 		}

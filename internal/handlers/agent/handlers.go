@@ -13,16 +13,14 @@ type AgentProvider interface {
 }
 
 type AgentApp struct {
-	remoteHost     string
-	remotePort     string
-	remoteProtocol string
-	getData        AgentProvider
+	remoteWebServer string
+	remoteProtocol  string
+	getData         AgentProvider
 }
 
-func (aa *AgentApp) Init(protocol string, host string, port string, data AgentProvider) {
-	aa.remotePort = port
+func (aa *AgentApp) Init(protocol string, host string, data AgentProvider) {
 	aa.remoteProtocol = protocol
-	aa.remoteHost = host
+	aa.remoteWebServer = host
 	aa.getData = data
 }
 
@@ -34,7 +32,7 @@ func (aa *AgentApp) SendMetric() {
 	exportData := *aa.getData.ExportMetrics()
 	client := resty.New()
 	client.SetHeader("Content-Type", "text/plain")
-	client.SetBaseURL(aa.remoteProtocol + aa.remoteHost + ":" + aa.remotePort + "/update")
+	client.SetBaseURL(aa.remoteProtocol + aa.remoteWebServer + "/update")
 	/*
 		req, err := http.NewRequest("POST", aa.remoteProtocol+aa.remoteHost+aa.remotePort, nil)
 		req.Header.Add("Content-Type", "text/plain")

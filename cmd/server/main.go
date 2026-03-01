@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -8,12 +9,17 @@ import (
 	"github.com/tukhvatullinsm/golang-project/internal/storage"
 )
 
-const (
-	IP   string = "localhost"
-	PORT string = "8080"
-)
+var WebServer struct {
+	Endpoint string
+}
+
+func init() {
+	flag.StringVar(&WebServer.Endpoint, "a", "localhost:8080", "Enter endpoint socket (address:port)")
+}
 
 func main() {
+	// TODO: Init Server (Endpoint) socket
+	flag.Parse()
 	// TODO: init storage object
 	objStorage := storage.New()
 
@@ -28,7 +34,7 @@ func main() {
 	router.Post("/update/{type}/{name}/{value}", webapp.SetValues)
 
 	// TODO: Run and Check Server
-	err := http.ListenAndServe(IP+":"+PORT, router)
+	err := http.ListenAndServe(WebServer.Endpoint, router)
 	if err != nil {
 		panic(err)
 	}
