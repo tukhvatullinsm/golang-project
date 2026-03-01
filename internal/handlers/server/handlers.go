@@ -85,8 +85,20 @@ func (wa *WebApp) SetValues(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	ct := r.Header.Get("Content-Type")
-	switch ct {
+	//ct := r.Header.Get("Content-Type")
+	res, httpCode := CheckURLParams(typeAtt, valueAtt)
+	if !res {
+		w.WriteHeader(httpCode)
+		return
+	}
+
+	wa.ObjStorage.SetValue(typeAtt, nameAtt, valueAtt)
+	if ok := slices.Contains(wa.Parameters, nameAtt); !ok {
+		wa.Parameters = append(wa.Parameters, nameAtt)
+	}
+	w.WriteHeader(http.StatusOK)
+
+	/*switch ct {
 	case "text/plain":
 		res, httpCode := CheckURLParams(typeAtt, valueAtt)
 		if !res {
@@ -103,7 +115,7 @@ func (wa *WebApp) SetValues(w http.ResponseWriter, r *http.Request) {
 	default:
 		w.WriteHeader(http.StatusUnsupportedMediaType)
 		return
-	}
+	} */
 }
 
 func (wa *WebApp) GetParam(w http.ResponseWriter, r *http.Request) {
