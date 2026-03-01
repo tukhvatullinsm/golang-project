@@ -29,7 +29,7 @@ type WebApp struct {
 
 func (wa *WebApp) Init(stg *storage.MemStorage) {
 	wa.ObjStorage = stg
-	wa.Parameters = make([]string, 0, 0)
+	wa.Parameters = make([]string, 0)
 }
 
 /*
@@ -123,12 +123,12 @@ func (wa *WebApp) GetParam(w http.ResponseWriter, r *http.Request) {
 	rawResult := ""
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "text/html")
-	rawResult += fmt.Sprintf("<p>Метрики системы</p>\n")
-	rawResult += fmt.Sprintf("<ul>\n")
+	rawResult += "<p>Метрики системы</p>\n"
+	rawResult += "<ul>\n"
 	for _, v := range wa.Parameters {
 		rawResult += fmt.Sprintf("<li>%s : %s</li>\n", v, fmt.Sprintf("%v", listObj[v]))
 	}
-	rawResult += fmt.Sprintf("</ul>\n")
+	rawResult += "</ul>\n"
 	_, err := w.Write([]byte(rawResult))
 	if err != nil {
 		log.Fatal("Error writing response:", err)

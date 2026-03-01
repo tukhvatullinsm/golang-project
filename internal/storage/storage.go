@@ -49,7 +49,7 @@ func (ms *MemStorage) GetValue(param, key string) any {
 	case "counter":
 		v, ok := ms.counter[key]
 		if ok {
-			return v
+			return v[len(v)-1]
 		} else {
 			return nil
 		}
