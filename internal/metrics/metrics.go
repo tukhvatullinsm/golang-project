@@ -55,6 +55,7 @@ func (mm *MyMetrics) ExportMetrics() *map[string]map[string]interface{} {
 	for k, v := range mm.RunMetrics {
 		result["gauge"][k] = v
 	}
-
+	//Reset Counter value
+	mm.PollCount = 0
 	return &result
 }

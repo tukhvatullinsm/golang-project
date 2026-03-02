@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"log"
-	"os"
 	"runtime"
 	"time"
 
@@ -60,7 +59,6 @@ var MetricsName = []string{
 
 func main() {
 	// TODO: Init Client Configuration
-	os.Setenv("ADDRESS", "localhost:443")
 	var cfg Config
 	err := env.Parse(&cfg)
 	if err != nil {

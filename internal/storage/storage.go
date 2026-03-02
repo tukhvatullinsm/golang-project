@@ -11,7 +11,7 @@ type counter int64
 
 type MemStorage struct {
 	gauge      map[string]gauge
-	counter    map[string][]counter
+	counter    map[string]counter
 	dataCache  map[string]any
 	lastUpdate time.Time
 	lastGet    time.Time
@@ -20,7 +20,7 @@ type MemStorage struct {
 func New() *MemStorage {
 	obj := MemStorage{}
 	obj.gauge = make(map[string]gauge)
-	obj.counter = make(map[string][]counter)
+	obj.counter = make(map[string]counter)
 	obj.dataCache = make(map[string]any)
 	return &obj
 }
@@ -32,7 +32,7 @@ func (ms *MemStorage) SetValue(param, key, value string) {
 		ms.gauge[key] = gauge(num)
 	case "counter":
 		num, _ := strconv.ParseInt(value, 10, 64)
-		ms.counter[key] = append(ms.counter[key], counter(num))
+		ms.counter[key] += counter(num)
 	}
 	ms.lastUpdate = time.Now()
 }
@@ -49,7 +49,7 @@ func (ms *MemStorage) GetValue(param, key string) any {
 	case "counter":
 		v, ok := ms.counter[key]
 		if ok {
-			return v[len(v)-1]
+			return v
 		} else {
 			return nil
 		}

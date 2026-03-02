@@ -91,7 +91,6 @@ func (wa *WebApp) SetValues(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(httpCode)
 		return
 	}
-
 	wa.ObjStorage.SetValue(typeAtt, nameAtt, valueAtt)
 	if ok := slices.Contains(wa.Parameters, nameAtt); !ok {
 		wa.Parameters = append(wa.Parameters, nameAtt)

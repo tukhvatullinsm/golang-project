@@ -15,13 +15,8 @@ type Config struct {
 	Endpoint string `env:"ADDRESS"`
 }
 
-func init() {
-
-}
-
 func main() {
 	// TODO: Init Server Configuration (Endpoint)
-	//os.Setenv("ADDRESS", "localhost:100")
 
 	var cfg Config
 	err := env.Parse(&cfg)
