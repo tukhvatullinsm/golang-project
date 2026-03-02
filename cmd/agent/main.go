@@ -12,9 +12,9 @@ import (
 )
 
 type Config struct {
-	Endpoint       string        `env:"ADDRESS"`
-	PollInterval   time.Duration `env:"POLL_INTERVAL"`
-	ReportInterval time.Duration `env:"REPORT_INTERVAL"`
+	Endpoint       string `env:"ADDRESS"`
+	PollInterval   int64  `env:"POLL_INTERVAL"`
+	ReportInterval int64  `env:"REPORT_INTERVAL"`
 }
 
 func init() {
@@ -69,10 +69,10 @@ func main() {
 		flag.StringVar(&cfg.Endpoint, "a", "localhost:8080", "Enter endpoint socket (address:port)")
 	}
 	if cfg.ReportInterval == 0 {
-		flag.DurationVar(&cfg.ReportInterval, "r", 10, "Report interval for metrics in seconds")
+		flag.Int64Var(&cfg.ReportInterval, "r", 10, "Report interval for metrics in seconds")
 	}
 	if cfg.PollInterval == 0 {
-		flag.DurationVar(&cfg.PollInterval, "p", 2, "Poll interval for metrics in seconds")
+		flag.Int64Var(&cfg.PollInterval, "p", 2, "Poll interval for metrics in seconds")
 	}
 	flag.Parse()
 	// TODO : init runtime memstat object
@@ -87,7 +87,7 @@ func main() {
 
 	for {
 		agentApp.UpdateValue()
-		time.Sleep(cfg.PollInterval * time.Second)
+		time.Sleep(time.Duration(cfg.PollInterval) * time.Second)
 		if int64(metricsObj.PollCount)%5 == 0 {
 			agentApp.SendMetric()
 		}
