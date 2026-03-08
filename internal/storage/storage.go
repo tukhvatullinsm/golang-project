@@ -58,7 +58,7 @@ func (ms *MemStorage) GetValue(param, key string) any {
 	}
 }
 
-func (ms *MemStorage) GetAllValue() *map[string]any {
+func (ms *MemStorage) GetAllValue() map[string]any {
 	if ms.lastUpdate.After(ms.lastGet) {
 		for k, v := range ms.gauge {
 			ms.dataCache[k] = v
@@ -67,5 +67,5 @@ func (ms *MemStorage) GetAllValue() *map[string]any {
 			ms.dataCache[k] = v
 		}
 	}
-	return &ms.dataCache
+	return ms.dataCache
 }

@@ -17,16 +17,6 @@ type Config struct {
 	ReportInterval int64  `env:"REPORT_INTERVAL"`
 }
 
-func init() {
-
-}
-
-const (
-	//pollInterval   = 2 * time.Second
-	//reportInterval = 10 * time.Second
-	scheme = "http://"
-)
-
 var MetricsName = []string{
 	"Alloc",
 	"BuckHashSys",
@@ -58,7 +48,6 @@ var MetricsName = []string{
 }
 
 func main() {
-	// TODO: Init Client Configuration
 	var cfg Config
 	err := env.Parse(&cfg)
 	if err != nil {
@@ -75,15 +64,13 @@ func main() {
 		flag.Int64Var(&cfg.PollInterval, "p", 2, "Poll interval for metrics in seconds")
 	}
 	flag.Parse()
-	// TODO : init runtime memstat object
+
 	runMemStat := runtime.MemStats{}
-	// TODO: init agent metrics object
 	metricsObj := metrics.MyMetrics{}
 	metricsObj.Init(&runMemStat, MetricsName)
-	// TODO: init agent handler object
+
 	agentApp := agent.AgentApp{}
-	agentApp.Init(scheme, cfg.Endpoint, &metricsObj)
-	// TODO: run main algorithm
+	agentApp.Init("http://", cfg.Endpoint, &metricsObj)
 
 	for {
 		agentApp.UpdateValue()

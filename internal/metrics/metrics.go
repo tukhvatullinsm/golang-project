@@ -46,7 +46,7 @@ func (mm *MyMetrics) UpdateMetrics() {
 	}
 }
 
-func (mm *MyMetrics) ExportMetrics() *map[string]map[string]interface{} {
+func (mm *MyMetrics) ExportMetrics() map[string]map[string]interface{} {
 	result := make(map[string]map[string]interface{})
 	result["counter"] = make(map[string]interface{})
 	result["gauge"] = make(map[string]interface{})
@@ -55,7 +55,6 @@ func (mm *MyMetrics) ExportMetrics() *map[string]map[string]interface{} {
 	for k, v := range mm.RunMetrics {
 		result["gauge"][k] = v
 	}
-	//Reset Counter value
 	mm.PollCount = 0
-	return &result
+	return result
 }

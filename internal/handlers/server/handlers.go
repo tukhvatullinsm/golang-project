@@ -14,12 +14,12 @@ import (
 type IntMemStorage interface {
 	SetValue(param, key, value string)
 	GetValue(param, key string) any
-	GetAllValue() *map[string]any
+	GetAllValue() map[string]any
 }
 
-var parameters = map[string]int64{
-	"counter": 1,
-	"gauge":   2,
+var parameters = map[string]struct{}{
+	"counter": {},
+	"gauge":   {},
 }
 
 type WebApp struct {
@@ -32,34 +32,6 @@ func (wa *WebApp) Init(stg *storage.MemStorage) {
 	wa.Parameters = make([]string, 0)
 }
 
-/*
-	func (wa *WebApp) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-		if r.Method == "POST" {
-			rawQueryParams := r.URL.EscapedPath()
-			strippedQueryParams := strings.TrimPrefix(rawQueryParams, "/update/")
-			sliceQueryParams := strings.Split(strippedQueryParams, "/")
-			ct := r.Header.Get("Content-Type")
-			switch ct {
-			case "text/plain":
-				res, httpCode := CheckURLParams(sliceQueryParams)
-				if !res {
-					w.WriteHeader(httpCode)
-					return
-				}
-				wa.ObjStorage.SetValue(sliceQueryParams[0], sliceQueryParams[1], sliceQueryParams[2])
-				w.WriteHeader(http.StatusOK)
-				return
-			default:
-				w.WriteHeader(http.StatusUnsupportedMediaType)
-				return
-			}
-		}
-		if r.Method == "GET" {
-			w.WriteHeader(http.StatusMethodNotAllowed)
-			return
-		}
-	}
-*/
 func (wa *WebApp) GetValue(w http.ResponseWriter, r *http.Request) {
 	typeAtt := chi.URLParam(r, "type")
 	nameAtt := chi.URLParam(r, "name")
@@ -85,7 +57,6 @@ func (wa *WebApp) SetValues(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	//ct := r.Header.Get("Content-Type")
 	res, httpCode := CheckURLParams(typeAtt, valueAtt)
 	if !res {
 		w.WriteHeader(httpCode)
@@ -96,29 +67,10 @@ func (wa *WebApp) SetValues(w http.ResponseWriter, r *http.Request) {
 		wa.Parameters = append(wa.Parameters, nameAtt)
 	}
 	w.WriteHeader(http.StatusOK)
-
-	/*switch ct {
-	case "text/plain":
-		res, httpCode := CheckURLParams(typeAtt, valueAtt)
-		if !res {
-			w.WriteHeader(httpCode)
-			return
-		}
-
-		wa.ObjStorage.SetValue(typeAtt, nameAtt, valueAtt)
-		if ok := slices.Contains(wa.Parameters, nameAtt); !ok {
-			wa.Parameters = append(wa.Parameters, nameAtt)
-		}
-		w.WriteHeader(http.StatusOK)
-		return
-	default:
-		w.WriteHeader(http.StatusUnsupportedMediaType)
-		return
-	} */
 }
 
 func (wa *WebApp) GetParam(w http.ResponseWriter, r *http.Request) {
-	listObj := *wa.ObjStorage.GetAllValue()
+	listObj := wa.ObjStorage.GetAllValue()
 	rawResult := ""
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "text/html")
