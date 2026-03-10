@@ -47,8 +47,10 @@ func main() {
 
 	router := chi.NewRouter()
 	router.Use(webapp.LoggingMiddleware)
+	router.Post("/value/", webapp.GetValueJSON)
 	router.Get("/value/{type}/{name}", webapp.GetValue)
 	router.Get("/", webapp.GetParam)
+	router.Post("/update/", webapp.SetValuesJSON)
 	router.Post("/update/{type}/{name}/{value}", webapp.SetValues)
 
 	logger.Infow("Starting server", "addr", cfg.Endpoint)

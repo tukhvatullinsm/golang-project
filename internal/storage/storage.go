@@ -25,7 +25,7 @@ func New() *MemStorage {
 	return &obj
 }
 
-func (ms *MemStorage) SetValue(param, key, value string) {
+func (ms *MemStorage) SetValue(param string, key string, value string) {
 	switch param {
 	case "gauge":
 		num, _ := strconv.ParseFloat(value, 64)
