@@ -3,6 +3,8 @@ package agent
 import (
 	"fmt"
 	"log"
+	"strconv"
+	"time"
 
 	"github.com/go-resty/resty/v2"
 )
@@ -10,6 +12,13 @@ import (
 type AgentProvider interface {
 	ExportMetrics() map[string]map[string]interface{}
 	UpdateMetrics()
+}
+
+type Metrics struct {
+	ID    string   `json:"id"`
+	MType string   `json:"type"`
+	Delta *int64   `json:"delta,omitempty"`
+	Value *float64 `json:"value,omitempty"`
 }
 
 type AgentApp struct {
@@ -29,22 +38,56 @@ func (aa *AgentApp) UpdateValue() {
 }
 
 func (aa *AgentApp) SendMetric() {
+	backoffSchedule := []time.Duration{
+		100 * time.Millisecond,
+		500 * time.Millisecond,
+		1 * time.Second,
+	}
 	exportData := aa.getData.ExportMetrics()
 	client := resty.New()
-	client.SetHeader("Content-Type", "text/plain")
-	client.SetBaseURL(aa.remoteProtocol + aa.remoteWebServer + "/update")
+	client.SetHeader("Content-Type", "application/json")
 
 	for k, v := range exportData {
-		path := ""
-		for m, a := range v {
-			path = "/" + k + "/" + m + "/" + fmt.Sprintf("%v", a)
-			resp, err := client.R().
-				Post(path)
-			if err != nil {
-				log.Println(err, resp.StatusCode())
+		expObj := new(Metrics)
+		switch k {
+		case "counter":
+			expObj.MType = "counter"
+			expObj.Delta = new(int64)
+			for m, a := range v {
+				expObj.ID = m
+				*expObj.Delta, _ = strconv.ParseInt(fmt.Sprintf("%v", a), 10, 64)
+				for _, backoff := range backoffSchedule {
+					resp, err := client.R().
+						SetBody(expObj).
+						Post(aa.remoteProtocol + aa.remoteWebServer + "/update/")
+
+					if err != nil {
+						log.Println(err, resp.StatusCode())
+						time.Sleep(backoff)
+					} else {
+						break
+					}
+				}
 			}
-			if resp.StatusCode() != 200 {
-				log.Println(resp.RawResponse)
+		case "gauge":
+			expObj.MType = "gauge"
+			expObj.Value = new(float64)
+			for m, a := range v {
+				expObj.ID = m
+				*expObj.Value, _ = strconv.ParseFloat(fmt.Sprintf("%v", a), 64)
+				for _, backoff := range backoffSchedule {
+					resp, err := client.R().
+						SetBody(expObj).
+						Post(aa.remoteProtocol + aa.remoteWebServer + "/update/")
+
+					if err != nil {
+						log.Println(err, resp.StatusCode())
+						time.Sleep(backoff)
+					} else {
+						break
+					}
+				}
+
 			}
 		}
 	}
