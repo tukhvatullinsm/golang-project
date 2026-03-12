@@ -47,6 +47,8 @@ func main() {
 
 	router := chi.NewRouter()
 	router.Use(webapp.LoggingMiddleware)
+	router.Use(webapp.GzipMiddleware)
+	//	router.Use(webapp.CompressMiddleware)
 	router.Post("/value/", webapp.GetValueJSON)
 	router.Get("/value/{type}/{name}", webapp.GetValue)
 	router.Get("/", webapp.GetParam)

@@ -1,6 +1,9 @@
 package agent
 
 import (
+	"bytes"
+	"compress/gzip"
+	"encoding/json"
 	"fmt"
 	"log"
 	"strconv"
@@ -46,7 +49,7 @@ func (aa *AgentApp) SendMetric() {
 	exportData := aa.getData.ExportMetrics()
 	client := resty.New()
 	client.SetHeader("Content-Type", "application/json")
-
+	client.SetHeader("Content-Encoding", "gzip")
 	for k, v := range exportData {
 		expObj := new(Metrics)
 		switch k {
@@ -56,9 +59,19 @@ func (aa *AgentApp) SendMetric() {
 			for m, a := range v {
 				expObj.ID = m
 				*expObj.Delta, _ = strconv.ParseInt(fmt.Sprintf("%v", a), 10, 64)
+				jsonData, err := json.Marshal(expObj)
+				if err != nil {
+					log.Println("Error marshaling JSON: %s", err)
+					break
+				}
+				compressRes, err := Compress(jsonData)
+				if err != nil {
+					log.Println("Error compressing JSON: %s", err)
+					break
+				}
 				for _, backoff := range backoffSchedule {
 					resp, err := client.R().
-						SetBody(expObj).
+						SetBody(compressRes).
 						Post(aa.remoteProtocol + aa.remoteWebServer + "/update/")
 
 					if err != nil {
@@ -75,9 +88,19 @@ func (aa *AgentApp) SendMetric() {
 			for m, a := range v {
 				expObj.ID = m
 				*expObj.Value, _ = strconv.ParseFloat(fmt.Sprintf("%v", a), 64)
+				jsonData, err := json.Marshal(expObj)
+				if err != nil {
+					log.Println("Error marshaling JSON: %s", err)
+					break
+				}
+				compressRes, err := Compress(jsonData)
+				if err != nil {
+					log.Println("Error compressing JSON: %s", err)
+					break
+				}
 				for _, backoff := range backoffSchedule {
 					resp, err := client.R().
-						SetBody(expObj).
+						SetBody(compressRes).
 						Post(aa.remoteProtocol + aa.remoteWebServer + "/update/")
 
 					if err != nil {
@@ -91,4 +114,20 @@ func (aa *AgentApp) SendMetric() {
 			}
 		}
 	}
+}
+
+func Compress(data []byte) ([]byte, error) {
+	var b bytes.Buffer
+	gz, err := gzip.NewWriterLevel(&b, gzip.BestSpeed)
+	if err != nil {
+		log.Println("Error creating gzip writer", err)
+		return nil, err
+	}
+	if _, err := gz.Write(data); err != nil {
+		log.Println("Error compressing data", err)
+	}
+	if err := gz.Close(); err != nil {
+		log.Println("Error compressing (clear) data", err)
+	}
+	return b.Bytes(), nil
 }

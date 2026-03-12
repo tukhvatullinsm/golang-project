@@ -1,12 +1,16 @@
 package server
 
 import (
+	"bytes"
+	"compress/gzip"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"slices"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -138,7 +142,8 @@ func (wa *WebApp) SetValuesJSON(w http.ResponseWriter, r *http.Request) {
 		decoder := json.NewDecoder(r.Body)
 		err := decoder.Decode(&objMetrics)
 		if err != nil {
-			wa.Objlog.Info("Error decoding JSON:", err)
+			wa.Objlog.Infoln("Error decoding JSON:", err,
+				r.Body)
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
@@ -188,23 +193,6 @@ func (wa *WebApp) GetParam(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func CheckURLParams(params ...string) (bool, int) {
-	if _, ok := parameters[params[0]]; !ok {
-		return false, http.StatusBadRequest
-	}
-	switch params[0] {
-	case "gauge":
-		if _, err := strconv.ParseFloat(params[1], 64); err != nil {
-			return false, http.StatusBadRequest
-		}
-	case "counter":
-		if _, err := strconv.ParseInt(params[1], 10, 64); err != nil {
-			return false, http.StatusBadRequest
-		}
-	}
-	return true, 0
-}
-
 func (wa *WebApp) LoggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
@@ -231,6 +219,86 @@ func (wa *WebApp) LoggingMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+func (wa *WebApp) UncompressMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Content-Type") == "text/html" || r.Header.Get("Content-Type") == "application/json" {
+			if r.Header.Get("Content-Encoding") == "gzip" {
+				gz, err := gzip.NewReader(r.Body)
+				if err != nil {
+					wa.Objlog.Info("Error creating gzip reader:", err)
+					http.Error(w, "Internal server error", http.StatusInternalServerError)
+					return
+				}
+				defer gz.Close()
+				r.Body.Close()
+				uncomBody, err := io.ReadAll(gz)
+				newBody := io.NopCloser(bytes.NewBuffer(uncomBody))
+				r.Body = newBody
+				r.ContentLength = int64(len(uncomBody))
+				next.ServeHTTP(w, r)
+				return
+			}
+		}
+		next.ServeHTTP(w, r)
+
+	})
+}
+
+func (wa *WebApp) CompressMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Content-Type") == "text/html" || r.Header.Get("Content-Type") == "application/json" {
+			if r.Header.Get("Accept-Encoding") == "gzip" {
+				gz, err := gzip.NewWriterLevel(w, gzip.BestSpeed)
+				if err != nil {
+					wa.Objlog.Info("Error creating gzip writer:", err)
+					io.WriteString(w, err.Error())
+					return
+				}
+				defer gz.Close()
+				w.Header().Add("Content-Encoding", "gzip")
+				next.ServeHTTP(gzipWriter{ResponseWriter: w, Writer: gz}, r)
+				return
+			}
+		}
+		next.ServeHTTP(w, r)
+
+	})
+}
+
+func (wa *WebApp) GzipMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Content-Type") == "text/html" || r.Header.Get("Content-Type") == "application/json" {
+			if r.Header.Get("Content-Encoding") == "gzip" {
+				gz, err := gzip.NewReader(r.Body)
+				if err != nil {
+					wa.Objlog.Info("Error creating gzip reader:", err)
+					http.Error(w, "Internal server error", http.StatusInternalServerError)
+					return
+				}
+				defer gz.Close()
+				r.Body.Close()
+				uncomBody, err := io.ReadAll(gz)
+				newBody := io.NopCloser(bytes.NewBuffer(uncomBody))
+				r.Body = newBody
+				r.ContentLength = int64(len(uncomBody))
+			}
+			if strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
+				gz, err := gzip.NewWriterLevel(w, gzip.BestSpeed)
+				if err != nil {
+					wa.Objlog.Info("Error creating gzip writer:", err)
+					io.WriteString(w, err.Error())
+					return
+				}
+				defer gz.Close()
+				w.Header().Add("Content-Encoding", "gzip")
+				w = gzipWriter{ResponseWriter: w, Writer: gz}
+			}
+		}
+		next.ServeHTTP(w, r)
+
+	})
+}
+
 type responseData struct {
 	status int
 	size   int
@@ -250,4 +318,30 @@ func (lrw *loggingResponseWriter) Write(b []byte) (int, error) {
 func (lrw *loggingResponseWriter) WriteHeader(status int) {
 	lrw.responseData.status = status
 	lrw.ResponseWriter.WriteHeader(status)
+}
+
+type gzipWriter struct {
+	http.ResponseWriter
+	Writer io.Writer
+}
+
+func (w gzipWriter) Write(b []byte) (int, error) {
+	return w.Writer.Write(b)
+}
+
+func CheckURLParams(params ...string) (bool, int) {
+	if _, ok := parameters[params[0]]; !ok {
+		return false, http.StatusBadRequest
+	}
+	switch params[0] {
+	case "gauge":
+		if _, err := strconv.ParseFloat(params[1], 64); err != nil {
+			return false, http.StatusBadRequest
+		}
+	case "counter":
+		if _, err := strconv.ParseInt(params[1], 10, 64); err != nil {
+			return false, http.StatusBadRequest
+		}
+	}
+	return true, 0
 }
