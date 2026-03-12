@@ -221,7 +221,7 @@ func (wa *WebApp) LoggingMiddleware(next http.Handler) http.Handler {
 
 func (wa *WebApp) GzipMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Header.Get("Content-Type") == "text/html" || r.Header.Get("Content-Type") == "application/json" {
+		if r.Header.Get("Content-Type") == "html/text" || r.Header.Get("Content-Type") == "application/json" {
 			if r.Header.Get("Content-Encoding") == "gzip" {
 				gz, err := gzip.NewReader(r.Body)
 				if err != nil {
