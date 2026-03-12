@@ -61,12 +61,12 @@ func (aa *AgentApp) SendMetric() {
 				*expObj.Delta, _ = strconv.ParseInt(fmt.Sprintf("%v", a), 10, 64)
 				jsonData, err := json.Marshal(expObj)
 				if err != nil {
-					log.Println("Error marshaling JSON: %s", err)
+					log.Printf("Error marshaling JSON: %s", err)
 					break
 				}
 				compressRes, err := Compress(jsonData)
 				if err != nil {
-					log.Println("Error compressing JSON: %s", err)
+					log.Printf("Error compressing JSON: %s", err)
 					break
 				}
 				for _, backoff := range backoffSchedule {
@@ -90,12 +90,12 @@ func (aa *AgentApp) SendMetric() {
 				*expObj.Value, _ = strconv.ParseFloat(fmt.Sprintf("%v", a), 64)
 				jsonData, err := json.Marshal(expObj)
 				if err != nil {
-					log.Println("Error marshaling JSON: %s", err)
+					log.Printf("Error marshaling JSON: %s", err)
 					break
 				}
 				compressRes, err := Compress(jsonData)
 				if err != nil {
-					log.Println("Error compressing JSON: %s", err)
+					log.Printf("Error compressing JSON: %s", err)
 					break
 				}
 				for _, backoff := range backoffSchedule {

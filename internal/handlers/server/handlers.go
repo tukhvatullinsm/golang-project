@@ -219,52 +219,6 @@ func (wa *WebApp) LoggingMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func (wa *WebApp) UncompressMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Header.Get("Content-Type") == "text/html" || r.Header.Get("Content-Type") == "application/json" {
-			if r.Header.Get("Content-Encoding") == "gzip" {
-				gz, err := gzip.NewReader(r.Body)
-				if err != nil {
-					wa.Objlog.Info("Error creating gzip reader:", err)
-					http.Error(w, "Internal server error", http.StatusInternalServerError)
-					return
-				}
-				defer gz.Close()
-				r.Body.Close()
-				uncomBody, err := io.ReadAll(gz)
-				newBody := io.NopCloser(bytes.NewBuffer(uncomBody))
-				r.Body = newBody
-				r.ContentLength = int64(len(uncomBody))
-				next.ServeHTTP(w, r)
-				return
-			}
-		}
-		next.ServeHTTP(w, r)
-
-	})
-}
-
-func (wa *WebApp) CompressMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Header.Get("Content-Type") == "text/html" || r.Header.Get("Content-Type") == "application/json" {
-			if r.Header.Get("Accept-Encoding") == "gzip" {
-				gz, err := gzip.NewWriterLevel(w, gzip.BestSpeed)
-				if err != nil {
-					wa.Objlog.Info("Error creating gzip writer:", err)
-					io.WriteString(w, err.Error())
-					return
-				}
-				defer gz.Close()
-				w.Header().Add("Content-Encoding", "gzip")
-				next.ServeHTTP(gzipWriter{ResponseWriter: w, Writer: gz}, r)
-				return
-			}
-		}
-		next.ServeHTTP(w, r)
-
-	})
-}
-
 func (wa *WebApp) GzipMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("Content-Type") == "text/html" || r.Header.Get("Content-Type") == "application/json" {
@@ -278,6 +232,9 @@ func (wa *WebApp) GzipMiddleware(next http.Handler) http.Handler {
 				defer gz.Close()
 				r.Body.Close()
 				uncomBody, err := io.ReadAll(gz)
+				if err != nil {
+					wa.Objlog.Info("Error creating gzip reader:", err)
+				}
 				newBody := io.NopCloser(bytes.NewBuffer(uncomBody))
 				r.Body = newBody
 				r.ContentLength = int64(len(uncomBody))
