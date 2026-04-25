@@ -22,6 +22,9 @@ type IntMemStorage interface {
 	SetValue(param, key, value string)
 	GetValue(param, key string) any
 	GetAllValue() map[string]any
+	Create(filePath string, restore bool, interval int64) error
+	Write() error
+	Close() error
 }
 
 type Metrics struct {
@@ -40,12 +43,27 @@ type WebApp struct {
 	ObjStorage IntMemStorage
 	Parameters []string
 	Objlog     *zap.SugaredLogger
+	Interval   int64
 }
 
-func (wa *WebApp) Init(stg *storage.MemStorage, lg *zap.SugaredLogger) {
+func (wa *WebApp) Init(stg *storage.MemStorage, lg *zap.SugaredLogger, filePath string, restore bool, interval int64) {
 	wa.ObjStorage = stg
-	wa.Parameters = make([]string, 0)
+
 	wa.Objlog = lg
+	wa.Interval = interval
+	err := wa.ObjStorage.Create(filePath, restore, interval)
+	if err != nil {
+		wa.Objlog.Errorw("Failed to create file", "error", err)
+	}
+	if restore {
+		tmp := wa.ObjStorage.GetAllValue()
+		wa.Parameters = make([]string, 0, len(tmp))
+		for k, _ := range tmp {
+			wa.Parameters = append(wa.Parameters, k)
+		}
+	} else {
+		wa.Parameters = make([]string, 0)
+	}
 }
 
 func (wa *WebApp) GetValue(w http.ResponseWriter, r *http.Request) {
@@ -193,6 +211,18 @@ func (wa *WebApp) GetParam(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (wa *WebApp) SaveValue() {
+	for {
+		time.Sleep(time.Duration(wa.Interval) * time.Second)
+		wa.Objlog.Infoln("Writing values in file.")
+		err := wa.ObjStorage.Write()
+		if err != nil {
+			wa.Objlog.Warnw("Error writing to file by", "cause", err)
+		}
+	}
+
+}
+
 func (wa *WebApp) LoggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
@@ -221,7 +251,9 @@ func (wa *WebApp) LoggingMiddleware(next http.Handler) http.Handler {
 
 func (wa *WebApp) GzipMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Header.Get("Content-Type") == "html/text" || r.Header.Get("Content-Type") == "application/json" {
+		contentType := r.Header.Get("Content-type")
+		acceptType := r.Header.Get("Accept")
+		if contentType == "html/text" || contentType == "application/json" || acceptType == "html/text" || acceptType == "application/json" {
 			if r.Header.Get("Content-Encoding") == "gzip" {
 				gz, err := gzip.NewReader(r.Body)
 				if err != nil {
@@ -253,6 +285,20 @@ func (wa *WebApp) GzipMiddleware(next http.Handler) http.Handler {
 		}
 		next.ServeHTTP(w, r)
 
+	})
+}
+
+func (wa *WebApp) PanicMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := recover(); err != nil {
+			err := wa.ObjStorage.Write()
+			defer wa.ObjStorage.Close()
+			if err != nil {
+				wa.Objlog.Info("Error save data after panic happened:", err)
+			}
+
+		}
+		next.ServeHTTP(w, r)
 	})
 }
 
