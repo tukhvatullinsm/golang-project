@@ -58,7 +58,7 @@ func (wa *WebApp) Init(stg *storage.MemStorage, lg *zap.SugaredLogger, filePath 
 	if restore {
 		tmp := wa.ObjStorage.GetAllValue()
 		wa.Parameters = make([]string, 0, len(tmp))
-		for k, _ := range tmp {
+		for k := range tmp {
 			wa.Parameters = append(wa.Parameters, k)
 		}
 	} else {
